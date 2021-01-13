@@ -8,13 +8,23 @@ const WebSocket = require('ws');
  *  - use async/await and Promise for request need to be run on sync
  */
 class Cortex {
-    constructor (user, socketUrl) {
+    constructor () {
+        this.socket = null
+        this.user = null
+    }
+
+    init(user, socketUrl) {
         // create socket
         process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0
         this.socket = new WebSocket(socketUrl)
-
-        // read user infor
+        let socket = this.socket
         this.user = user
+        return new Promise(function(resolve, reject) {
+            socket.on('open', function open() {
+                console.log('CONNECTED')
+                resolve()
+            })
+        })
     }
 
     queryHeadsetId(){
@@ -63,7 +73,7 @@ class Cortex {
                 "id": REQUEST_ACCESS_ID
             }
 
-            // console.log('start send request: ',requestAccessRequest)
+            console.log('start send request: ', JSON.stringify(requestAccessRequest))
             socket.send(JSON.stringify(requestAccessRequest));
 
             socket.on('message', (data)=>{
@@ -218,8 +228,6 @@ class Cortex {
             })
         })
     }
-
-
 
     stopRecord(authToken, sessionId, recordName){
         let socket = this.socket
@@ -668,39 +676,4 @@ class Cortex {
     }
 }
 
-// ---------------------------------------------------------
-let socketUrl = 'wss://localhost:6868'
-let user = {
-    "license":"your license",
-    "clientId":"your clientId",
-    "clientSecret":"your client secret",
-    "debit":1
-}
-
-let c = new Cortex(user, socketUrl)
-
-// ---------- sub data stream
-// have six kind of stream data ['fac', 'pow', 'eeg', 'mot', 'met', 'com']
-// user could sub one or many stream at once
-let streams = ['eeg']
-c.sub(streams)
-
-// ---------- training mental command for profile
-// // train is do with a specific profile
-// // if profile not yet exist, it will be created
-// let profileName = 'test'
-
-// // number of repeat train for each action
-// // user have 8 seconds for each time of training
-// let numberOfTrain = 1
-
-// // always train 'neutral' complete first then train other action
-// let trainingActions = ['neutral', 'push']
-
-// c.train(profileName, trainingActions, numberOfTrain)
-
-
-// ----------- go to live mode after train
-// // load profile which already trained then test your mental command
-// c.live(profileName)
-// ---------------------------------------------------------
+module.exports = Cortex
